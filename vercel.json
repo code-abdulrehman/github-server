@@ -9,9 +9,13 @@
       "dest": "index.js"
     },
     {
-      "src": "/auth/github/callback",
+      "src": "/auth/github",
       "dest": "index.js"
     },
+    {
+      "src": "/auth/github/callback",
+      "dest": "index.js"
+    },  
     {
       "src": "/(.*)",
       "dest": "/public/index.html"

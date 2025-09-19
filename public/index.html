@@ -970,12 +970,15 @@
     document.getElementById('save-btn').onclick = () => saveFile(false);
     document.getElementById('save-push-btn').onclick = () => saveFile(true);
 
-    // Logout functionality
+
     document.getElementById('logoutBtn').onclick = async () => {
       await fetch('/logout', { method: 'POST' });
-      location.reload();
+    
+      window.sessionStorage.removeItem('gh_token');
+      window.location.href = '/';
     };
-
+    
+      
     // Initialize
     loadMe();
   </script>

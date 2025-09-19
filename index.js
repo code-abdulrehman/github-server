@@ -117,21 +117,46 @@ app.get('/auth/github/callback', (req, res, next) => {
 });
 
 app.post('/logout', (req, res) => {
-  req.logout?.();
-  req.session?.destroy?.(() => {});
+  res.clearCookie('connect.sid', {
+    path: '/',       // make sure it matches the original cookie’s path
+    httpOnly: true,  // same as when you set it
+    secure: true,    // same as when you set it
+    sameSite: 'lax'  // or whatever you used
+  });
+
   res.clearCookie('gh_token');
-  res.json({ ok: true });
+  res.clearCookie('gh.sid');
+  res.clearCookie('gh.session');
+
+  res.status(200).json({ message: 'Logged out' });
 });
+
 
 app.get('/api/me', ensureAuthenticated, (req, res) => {
   const { id, username, displayName, photos } = req.user;
   res.json({ id, username, displayName, photos });
 });
 
+// Fetch all user repos, handling GitHub API pagination (default per_page=30, max=100)
 app.get('/api/repos', ensureAuthenticated, async (req, res) => {
   try {
-    const data = await githubRequest(req.user.token, 'GET', '/user/repos', {}, req.query);
-    res.json(data);
+    let allRepos = [];
+    let page = 1;
+    const per_page = 100; // GitHub max per_page is 100
+    let more = true;
+
+    while (more) {
+      const params = { ...req.query, per_page, page };
+      const repos = await githubRequest(req.user.token, 'GET', '/user/repos', {}, params);
+      allRepos = allRepos.concat(repos);
+      if (repos.length < per_page) {
+        more = false;
+      } else {
+        page++;
+      }
+    }
+
+    res.json(allRepos);
   } catch (err) {
     res.status(err.response?.status || 500).json({ error: err.response?.data || err.message });
   }

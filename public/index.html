@@ -9,7 +9,7 @@
     .file-tree {
       font-family: 'Courier New', monospace;
     }
-    .file-item {
+    .tree-item {
       cursor: pointer;
       padding: 4px 8px;
       display: flex;
@@ -17,27 +17,19 @@
       gap: 8px;
       border-radius: 4px;
       transition: background-color 0.2s;
+      margin: 1px 0;
     }
-    .file-item:hover {
+    .tree-item:hover {
       background-color: #f3f4f6;
     }
-    .file-item.selected {
+    .tree-item.selected {
       background-color: #dbeafe;
       color: #1d4ed8;
     }
-    .folder-item {
-      cursor: pointer;
-      padding: 4px 8px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      border-radius: 4px;
-      transition: background-color 0.2s;
+    .tree-item.folder {
+      font-weight: 500;
     }
-    .folder-item:hover {
-      background-color: #f3f4f6;
-    }
-    .folder-item.expanded {
+    .tree-item.folder.expanded {
       background-color: #f0f9ff;
     }
     .folder-icon {
@@ -160,14 +152,17 @@
       <!-- User Profile and Auth Controls -->
       <div class="flex items-center gap-4">
         <div id="user" class="flex items-center gap-2 hidden">
-          <img id="user-avatar" src="" alt="User Avatar" class="w-8 h-8 rounded-full border border-gray-300 shadow-sm" style="display:none;">
-          <span id="user-name" class="font-medium text-gray-700"></span>
+          <div class="flex items-center gap-2">
+            <img id="user-avatar" src="" alt="User Avatar" class="w-8 h-8 rounded-full border border-gray-300 shadow-sm" style="display:none;">
+            <span id="user-name" class="font-medium text-gray-700"></span>
+          </div>
+          <button id="logoutBtn" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Logout</button>
         </div>
+          
         <div id="auth" class="flex items-center gap-2">
           <a href="/auth/github" class="bg-black text-white px-4 py-2 rounded hover:bg-gray-800">
             <i class="fab fa-github"></i> Login with GitHub
           </a>
-          <button id="logoutBtn" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 hidden">Logout</button>
         </div>
       </div>
     </div>
@@ -373,7 +368,7 @@
         if (item.type === 'dir') {
           const isExpanded = expandedFolders.has(item.path);
           return `
-            <div class="folder-item ${isExpanded ? 'expanded' : ''}" data-path="${item.path}" data-type="${item.type}">
+            <div class="tree-item folder ${isExpanded ? 'expanded' : ''}" data-path="${item.path}" data-type="${item.type}">
               <span class="accordion-toggle ${isExpanded ? 'expanded' : ''}">
                 <i class="fas fa-chevron-right"></i>
               </span>
@@ -386,7 +381,7 @@
           `;
         } else {
           return `
-            <div class="file-item" data-path="${item.path}" data-type="${item.type}" data-sha="${item.sha}">
+            <div class="tree-item" data-path="${item.path}" data-type="${item.type}" data-sha="${item.sha}">
               <span class="accordion-toggle" style="opacity: 0;"></span>
               <i class="fas fa-file file-icon"></i>
               <span>${item.name}</span>
@@ -397,7 +392,7 @@
       }).join('');
 
       // Add click handlers for folders
-      document.querySelectorAll('.folder-item').forEach(item => {
+      document.querySelectorAll('.tree-item.folder').forEach(item => {
         item.addEventListener('click', async (e) => {
           e.stopPropagation();
           const path = item.dataset.path;
@@ -429,13 +424,13 @@
       });
 
       // Add click handlers for files
-      document.querySelectorAll('.file-item').forEach(item => {
+      document.querySelectorAll('.tree-item:not(.folder)').forEach(item => {
         item.addEventListener('click', (e) => {
           e.stopPropagation();
           const path = item.dataset.path;
           
           // Update selection
-          document.querySelectorAll('.file-item').forEach(i => i.classList.remove('selected'));
+          document.querySelectorAll('.tree-item').forEach(i => i.classList.remove('selected'));
           item.classList.add('selected');
           
           loadFile(path);
@@ -457,7 +452,7 @@
         if (item.type === 'dir') {
           const isExpanded = expandedFolders.has(item.path);
           return `
-            <div class="folder-item ${isExpanded ? 'expanded' : ''}" data-path="${item.path}" data-type="${item.type}">
+            <div class="tree-item folder ${isExpanded ? 'expanded' : ''}" data-path="${item.path}" data-type="${item.type}">
               <span class="accordion-toggle ${isExpanded ? 'expanded' : ''}">
                 <i class="fas fa-chevron-right"></i>
               </span>
@@ -470,7 +465,7 @@
           `;
         } else {
           return `
-            <div class="file-item" data-path="${item.path}" data-type="${item.type}" data-sha="${item.sha}">
+            <div class="tree-item" data-path="${item.path}" data-type="${item.type}" data-sha="${item.sha}">
               <span class="accordion-toggle" style="opacity: 0;"></span>
               <i class="fas fa-file file-icon"></i>
               <span>${item.name}</span>
@@ -481,7 +476,7 @@
       }).join('');
 
       // Re-add event listeners for nested items
-      contentDiv.querySelectorAll('.folder-item').forEach(item => {
+      contentDiv.querySelectorAll('.tree-item.folder').forEach(item => {
         item.addEventListener('click', async (e) => {
           e.stopPropagation();
           const path = item.dataset.path;
@@ -511,12 +506,12 @@
         });
       });
 
-      contentDiv.querySelectorAll('.file-item').forEach(item => {
+      contentDiv.querySelectorAll('.tree-item:not(.folder)').forEach(item => {
         item.addEventListener('click', (e) => {
           e.stopPropagation();
           const path = item.dataset.path;
           
-          document.querySelectorAll('.file-item').forEach(i => i.classList.remove('selected'));
+          document.querySelectorAll('.tree-item').forEach(i => i.classList.remove('selected'));
           item.classList.add('selected');
           
           loadFile(path);

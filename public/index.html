@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>GitHub Server UI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <style>
+    .file-tree {
+      font-family: 'Courier New', monospace;
+    }
+    .file-item {
+      cursor: pointer;
+      padding: 4px 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 4px;
+      transition: background-color 0.2s;
+    }
+    .file-item:hover {
+      background-color: #f3f4f6;
+    }
+    .file-item.selected {
+      background-color: #dbeafe;
+      color: #1d4ed8;
+    }
+    .folder-item {
+      cursor: pointer;
+      padding: 4px 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 4px;
+      transition: background-color 0.2s;
+    }
+    .folder-item:hover {
+      background-color: #f3f4f6;
+    }
+    .folder-item.expanded {
+      background-color: #f0f9ff;
+    }
+    .folder-icon {
+      color: #f59e0b;
+    }
+    .file-icon {
+      color: #6b7280;
+    }
+    .code-content {
+      background-color: #1f2937;
+      color: #f9fafb;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      overflow-x: auto;
+      font-family: 'Courier New', monospace;
+      white-space: pre-wrap;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      padding: 0.75rem;
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      border-radius: 0.75rem;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      flex-wrap: wrap;
+    }
+    .breadcrumb-item {
+      cursor: pointer;
+      color: #3b82f6;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.375rem;
+      transition: all 0.2s ease;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      white-space: nowrap;
+    }
+    .breadcrumb-item:hover {
+      background-color: #dbeafe;
+      color: #1d4ed8;
+      transform: translateY(-1px);
+    }
+    .breadcrumb-item.root {
+      background-color: #3b82f6;
+      color: white;
+      font-weight: 600;
+    }
+    .breadcrumb-item.root:hover {
+      background-color: #2563eb;
+    }
+    .breadcrumb-item.folder {
+      background-color: #f3f4f6;
+      color: #374151;
+      border: 1px solid #d1d5db;
+    }
+    .breadcrumb-item.folder:hover {
+      background-color: #e5e7eb;
+      color: #1f2937;
+    }
+    .breadcrumb-item.file {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border: 1px solid #f59e0b;
+      color: #92400e;
+      font-weight: 600;
+    }
+    .breadcrumb-item.file:hover {
+      background: linear-gradient(135deg, #fde68a 0%, #fcd34d 100%);
+      color: #78350f;
+    }
+    .breadcrumb-separator {
+      color: #6b7280;
+      font-weight: bold;
+      margin: 0 0.25rem;
+      display: flex;
+      align-items: center;
+    }
+    .accordion-toggle {
+      width: 16px;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: #6b7280;
+      transition: transform 0.2s ease;
+    }
+    .accordion-toggle.expanded {
+      transform: rotate(90deg);
+    }
+    .accordion-content {
+      margin-left: 20px;
+      border-left: 2px solid #e5e7eb;
+      padding-left: 10px;
+    }
+    .accordion-content.collapsed {
+      display: none;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-800 h-screen overflow-hidden">
+  <!-- Header -->
+  <div class="bg-white shadow-sm border-b p-4">
+    <div class="flex items-center justify-between">
+      <!-- Logo and Title -->
+      <div class="flex items-center gap-3">
+        <div class="rounded-full bg-black p-2 flex items-center justify-center shadow" style="width:48px;height:48px;">
+          <i class="fa-brands fa-github text-white text-2xl"></i>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-2xl font-bold tracking-tight text-gray-900">GitHub Explorer</span>
+          <small class="text-sm text-gray-500">Browse your repositories</small>
+        </div>
+      </div>
+      <!-- User Profile and Auth Controls -->
+      <div class="flex items-center gap-4">
+        <div id="user" class="flex items-center gap-2 hidden">
+          <img id="user-avatar" src="" alt="User Avatar" class="w-8 h-8 rounded-full border border-gray-300 shadow-sm" style="display:none;">
+          <span id="user-name" class="font-medium text-gray-700"></span>
+        </div>
+        <div id="auth" class="flex items-center gap-2">
+          <a href="/auth/github" class="bg-black text-white px-4 py-2 rounded hover:bg-gray-800">
+            <i class="fab fa-github"></i> Login with GitHub
+          </a>
+          <button id="logoutBtn" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 hidden">Logout</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Layout -->
+  <div class="flex h-full">
+    <!-- Left Sidebar - Repositories -->
+    <div class="w-1/3 bg-white border-r shadow-sm overflow-y-auto">
+      <div class="p-4">
+        <h2 class="text-lg font-semibold mb-3 flex items-center gap-2">
+          <i class="fas fa-folder"></i> Repositories
+        </h2>
+        <div id="repos" class="space-y-2"></div>
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 flex flex-col">
+      <!-- File Tree Header -->
+      <div class="bg-white border-b p-4">
+        <div id="repo-header" class="hidden">
+          <h3 id="current-repo" class="text-lg font-semibold mb-3 flex items-center gap-2">
+            <i class="fas fa-code-branch"></i>
+            <span id="current-repo-name"></span>
+          </h3>
+          <div id="breadcrumb" class="breadcrumb"></div>
+        </div>
+      </div>
+
+      <!-- File Tree and Content -->
+      <div class="flex-1 flex overflow-hidden">
+        <!-- File Tree -->
+        <div class="w-1/2 bg-white border-r overflow-y-auto">
+          <div class="p-4">
+            <div id="file-tree" class="file-tree"></div>
+          </div>
+        </div>
+
+        <!-- File Content -->
+        <div class="w-1/2 bg-white overflow-y-auto">
+          <div class="p-4">
+            <div id="file-content" class="hidden">
+              <div class="flex items-center justify-between mb-4">
+                <h4 id="file-name" class="text-lg font-semibold flex items-center gap-2">
+                  <i class="fas fa-file-code text-blue-500"></i>
+                  <span id="file-name-text"></span>
+                </h4>
+                <div class="flex gap-2">
+                  <button id="download-btn" class="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 flex items-center gap-1">
+                    <i class="fas fa-download"></i> Download
+                  </button>
+                  <button id="raw-btn" class="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600 flex items-center gap-1">
+                    <i class="fas fa-external-link-alt"></i> Raw
+                  </button>
+                </div>
+              </div>
+              <div id="file-preview" class="code-content"></div>
+            </div>
+            <div id="welcome-message" class="text-center text-gray-500 mt-20">
+              <i class="fas fa-folder-open text-6xl mb-4"></i>
+              <p class="text-xl">Select a repository to explore files</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentRepo = null;
+    let currentPath = '';
+    let currentFile = null;
+    let fileTreeData = {};
+    let expandedFolders = new Set();
+
+    async function api(path) {
+      const res = await fetch(path);
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    }
+
+    async function loadMe() {
+      try {
+        const me = await api('/api/me');
+        document.getElementById('auth').classList.add('hidden');
+        document.getElementById('logoutBtn').classList.remove('hidden');
+        const userDiv = document.getElementById('user');
+        userDiv.classList.remove('hidden');
+        userDiv.innerHTML = `<div class="flex items-center gap-3">
+          <img src="${me.photos?.[0]?.value || ''}" class="w-8 h-8 rounded-full"/>
+          <div><div class="font-bold">${me.username}</div><div class="text-sm text-gray-600">${me.displayName || ''}</div></div>
+        </div>`;
+        loadRepos();
+      } catch(e) {
+        console.log('Not logged in');
+      }
+    }
+
+    async function loadRepos() {
+      try {
+        const repos = await api('/api/repos');
+        const reposDiv = document.getElementById('repos');
+        reposDiv.innerHTML = repos.map(r => `
+          <div class="p-3 border rounded cursor-pointer hover:bg-gray-50 repo-item" data-owner="${r.owner.login}" data-repo="${r.name}">
+            <div class="font-semibold text-blue-600">${r.name}</div>
+            <div class="text-sm text-gray-600">${r.description || 'No description'}</div>
+            <div class="text-xs text-gray-500 mt-1">
+              <i class="fas fa-star"></i> ${r.stargazers_count} 
+              <i class="fas fa-code-branch ml-2"></i> ${r.default_branch}
+            </div>
+          </div>
+        `).join('');
+
+        // Add click handlers for repos
+        document.querySelectorAll('.repo-item').forEach(item => {
+          item.addEventListener('click', () => {
+            const owner = item.dataset.owner;
+            const repo = item.dataset.repo;
+            selectRepo(owner, repo);
+          });
+        });
+      } catch(e) {
+        console.error('Error loading repos:', e);
+      }
+    }
+
+    async function selectRepo(owner, repo) {
+      currentRepo = { owner, repo };
+      currentPath = '';
+      currentFile = null;
+      expandedFolders.clear();
+      fileTreeData = {};
+      
+      // Update UI
+      document.getElementById('repo-header').classList.remove('hidden');
+      document.getElementById('current-repo-name').textContent = `${owner}/${repo}`;
+      document.getElementById('welcome-message').classList.add('hidden');
+      document.getElementById('file-content').classList.add('hidden');
+      
+      // Update breadcrumb
+      updateBreadcrumb();
+      
+      // Load root directory
+      await loadDirectory('');
+      
+      // Update selected repo in sidebar
+      document.querySelectorAll('.repo-item').forEach(item => {
+        item.classList.remove('bg-blue-50', 'border-blue-300');
+      });
+      document.querySelector(`[data-owner="${owner}"][data-repo="${repo}"]`).classList.add('bg-blue-50', 'border-blue-300');
+    }
+
+    async function loadDirectory(path) {
+      try {
+        let apiPath;
+        if (path === '') {
+          apiPath = `/api/repos/${currentRepo.owner}/${currentRepo.repo}/contents`;
+        } else {
+          apiPath = `/api/repos/${currentRepo.owner}/${currentRepo.repo}/contents/${path}`;
+        }
+        
+        const contents = await api(apiPath);
+        fileTreeData[path] = contents;
+        
+        if (path === '') {
+          // Render root directory
+          renderFileTree(contents, path);
+        } else {
+          // Render nested directory content
+          renderNestedContent(path, contents);
+        }
+        
+        // Clear current file when navigating directories
+        if (path !== currentPath) {
+          currentFile = null;
+          document.getElementById('file-content').classList.add('hidden');
+        }
+      } catch(e) {
+        console.error('Error loading directory:', e);
+        if (path === '') {
+          document.getElementById('file-tree').innerHTML = '<div class="text-red-500">Error loading directory</div>';
+        }
+      }
+    }
+
+    function renderFileTree(contents, currentPath) {
+      const fileTreeDiv = document.getElementById('file-tree');
+      
+      if (!contents || contents.length === 0) {
+        fileTreeDiv.innerHTML = '<div class="text-gray-500">Empty directory</div>';
+        return;
+      }
+
+      // Sort: folders first, then files
+      const sorted = contents.sort((a, b) => {
+        if (a.type === 'dir' && b.type !== 'dir') return -1;
+        if (a.type !== 'dir' && b.type === 'dir') return 1;
+        return a.name.localeCompare(b.name);
+      });
+
+      fileTreeDiv.innerHTML = sorted.map(item => {
+        if (item.type === 'dir') {
+          const isExpanded = expandedFolders.has(item.path);
+          return `
+            <div class="folder-item ${isExpanded ? 'expanded' : ''}" data-path="${item.path}" data-type="${item.type}">
+              <span class="accordion-toggle ${isExpanded ? 'expanded' : ''}">
+                <i class="fas fa-chevron-right"></i>
+              </span>
+              <i class="fas fa-folder folder-icon"></i>
+              <span>${item.name}</span>
+            </div>
+            <div class="accordion-content ${isExpanded ? '' : 'collapsed'}" id="content-${item.path.replace(/[^a-zA-Z0-9]/g, '_')}">
+              ${isExpanded ? '<div class="text-gray-400 text-sm">Loading...</div>' : ''}
+            </div>
+          `;
+        } else {
+          return `
+            <div class="file-item" data-path="${item.path}" data-type="${item.type}" data-sha="${item.sha}">
+              <span class="accordion-toggle" style="opacity: 0;"></span>
+              <i class="fas fa-file file-icon"></i>
+              <span>${item.name}</span>
+              <span class="text-xs text-gray-500 ml-auto">${formatFileSize(item.size)}</span>
+            </div>
+          `;
+        }
+      }).join('');
+
+      // Add click handlers for folders
+      document.querySelectorAll('.folder-item').forEach(item => {
+        item.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const path = item.dataset.path;
+          const isExpanded = expandedFolders.has(path);
+          
+          if (isExpanded) {
+            expandedFolders.delete(path);
+            item.classList.remove('expanded');
+            const toggle = item.querySelector('.accordion-toggle');
+            toggle.classList.remove('expanded');
+            const content = document.getElementById(`content-${path.replace(/[^a-zA-Z0-9]/g, '_')}`);
+            content.classList.add('collapsed');
+          } else {
+            expandedFolders.add(path);
+            item.classList.add('expanded');
+            const toggle = item.querySelector('.accordion-toggle');
+            toggle.classList.add('expanded');
+            const content = document.getElementById(`content-${path.replace(/[^a-zA-Z0-9]/g, '_')}`);
+            content.classList.remove('collapsed');
+            
+            // Load folder contents if not already loaded
+            if (!fileTreeData[path]) {
+              await loadDirectory(path);
+            } else {
+              renderNestedContent(path, fileTreeData[path]);
+            }
+          }
+        });
+      });
+
+      // Add click handlers for files
+      document.querySelectorAll('.file-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const path = item.dataset.path;
+          
+          // Update selection
+          document.querySelectorAll('.file-item').forEach(i => i.classList.remove('selected'));
+          item.classList.add('selected');
+          
+          loadFile(path);
+        });
+      });
+    }
+
+    function renderNestedContent(path, contents) {
+      const contentDiv = document.getElementById(`content-${path.replace(/[^a-zA-Z0-9]/g, '_')}`);
+      if (!contentDiv) return;
+      
+      const sorted = contents.sort((a, b) => {
+        if (a.type === 'dir' && b.type !== 'dir') return -1;
+        if (a.type !== 'dir' && b.type === 'dir') return 1;
+        return a.name.localeCompare(b.name);
+      });
+
+      contentDiv.innerHTML = sorted.map(item => {
+        if (item.type === 'dir') {
+          const isExpanded = expandedFolders.has(item.path);
+          return `
+            <div class="folder-item ${isExpanded ? 'expanded' : ''}" data-path="${item.path}" data-type="${item.type}">
+              <span class="accordion-toggle ${isExpanded ? 'expanded' : ''}">
+                <i class="fas fa-chevron-right"></i>
+              </span>
+              <i class="fas fa-folder folder-icon"></i>
+              <span>${item.name}</span>
+            </div>
+            <div class="accordion-content ${isExpanded ? '' : 'collapsed'}" id="content-${item.path.replace(/[^a-zA-Z0-9]/g, '_')}">
+              ${isExpanded ? '<div class="text-gray-400 text-sm">Loading...</div>' : ''}
+            </div>
+          `;
+        } else {
+          return `
+            <div class="file-item" data-path="${item.path}" data-type="${item.type}" data-sha="${item.sha}">
+              <span class="accordion-toggle" style="opacity: 0;"></span>
+              <i class="fas fa-file file-icon"></i>
+              <span>${item.name}</span>
+              <span class="text-xs text-gray-500 ml-auto">${formatFileSize(item.size)}</span>
+            </div>
+          `;
+        }
+      }).join('');
+
+      // Re-add event listeners for nested items
+      contentDiv.querySelectorAll('.folder-item').forEach(item => {
+        item.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const path = item.dataset.path;
+          const isExpanded = expandedFolders.has(path);
+          
+          if (isExpanded) {
+            expandedFolders.delete(path);
+            item.classList.remove('expanded');
+            const toggle = item.querySelector('.accordion-toggle');
+            toggle.classList.remove('expanded');
+            const content = document.getElementById(`content-${path.replace(/[^a-zA-Z0-9]/g, '_')}`);
+            content.classList.add('collapsed');
+          } else {
+            expandedFolders.add(path);
+            item.classList.add('expanded');
+            const toggle = item.querySelector('.accordion-toggle');
+            toggle.classList.add('expanded');
+            const content = document.getElementById(`content-${path.replace(/[^a-zA-Z0-9]/g, '_')}`);
+            content.classList.remove('collapsed');
+            
+            if (!fileTreeData[path]) {
+              await loadDirectory(path);
+            } else {
+              renderNestedContent(path, fileTreeData[path]);
+            }
+          }
+        });
+      });
+
+      contentDiv.querySelectorAll('.file-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const path = item.dataset.path;
+          
+          document.querySelectorAll('.file-item').forEach(i => i.classList.remove('selected'));
+          item.classList.add('selected');
+          
+          loadFile(path);
+        });
+      });
+    }
+
+    async function loadFile(path) {
+      try {
+        const file = await api(`/api/repos/${currentRepo.owner}/${currentRepo.repo}/contents/${path}`);
+        currentFile = file;
+        
+        // Decode base64 content
+        const content = atob(file.content);
+        
+        // Show file content
+        document.getElementById('file-content').classList.remove('hidden');
+        document.getElementById('file-name-text').textContent = file.name;
+        document.getElementById('file-preview').textContent = content;
+        
+        // Update breadcrumb to show current file
+        updateBreadcrumb();
+        
+        // Update download and raw buttons
+        const downloadBtn = document.getElementById('download-btn');
+        const rawBtn = document.getElementById('raw-btn');
+        
+        downloadBtn.onclick = () => {
+          const blob = new Blob([content], { type: 'text/plain' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = file.name;
+          a.click();
+          URL.revokeObjectURL(url);
+        };
+        
+        rawBtn.onclick = () => {
+          window.open(file.download_url, '_blank');
+        };
+        
+      } catch(e) {
+        console.error('Error loading file:', e);
+        document.getElementById('file-preview').textContent = 'Error loading file content';
+      }
+    }
+
+    function updateBreadcrumb() {
+      const breadcrumbDiv = document.getElementById('breadcrumb');
+      
+      // Start with repository root
+      let breadcrumbHTML = `<span class="breadcrumb-item root" data-path=""><i class="fas fa-home"></i> ${currentRepo.owner}/${currentRepo.repo}</span>`;
+      
+      // If we have a current file, show the full path to that file
+      if (currentFile) {
+        const filePath = currentFile.path;
+        const pathParts = filePath.split('/');
+        const fileName = pathParts.pop(); // Remove the file name
+        const folderPath = pathParts.join('/');
+        
+        if (folderPath) {
+          const folderParts = folderPath.split('/');
+          let currentPathAccumulator = '';
+          
+          folderParts.forEach((part, index) => {
+            currentPathAccumulator += (currentPathAccumulator ? '/' : '') + part;
+            breadcrumbHTML += '<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>';
+            breadcrumbHTML += `<span class="breadcrumb-item folder" data-path="${currentPathAccumulator}"><i class="fas fa-folder"></i> ${part}</span>`;
+          });
+        }
+        
+        // Add the file
+        breadcrumbHTML += '<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>';
+        breadcrumbHTML += `<span class="breadcrumb-item file"><i class="fas fa-file-code"></i> ${fileName}</span>`;
+      }
+      
+      breadcrumbDiv.innerHTML = breadcrumbHTML;
+      
+      // Add click handlers for breadcrumb navigation
+      breadcrumbDiv.querySelectorAll('.breadcrumb-item').forEach(item => {
+        if (!item.classList.contains('file')) {
+          item.addEventListener('click', () => {
+            const path = item.dataset.path || '';
+            currentPath = path;
+            currentFile = null;
+            updateBreadcrumb();
+            loadDirectory(path);
+          });
+        }
+      });
+    }
+
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    // Logout functionality
+    document.getElementById('logoutBtn').onclick = async () => {
+      await fetch('/logout', { method: 'POST' });
+      location.reload();
+    };
+
+    // Initialize
+    loadMe();
+  </script>
+</body>
+</html>

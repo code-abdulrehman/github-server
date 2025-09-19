@@ -1,0 +1,17 @@
+{
+    "info": {
+      "name": "Github Server API",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+      { "name": "Login redirect", "request": { "method": "GET", "url": "{{baseUrl}}/auth/github" }},
+      { "name": "Me", "request": { "method": "GET", "url": "{{baseUrl}}/api/me" }},
+      { "name": "Repos", "request": { "method": "GET", "url": "{{baseUrl}}/api/repos" }},
+      { "name": "Branches", "request": { "method": "GET", "url": "{{baseUrl}}/api/repos/:owner/:repo/branches" }},
+      { "name": "Contents", "request": { "method": "GET", "url": "{{baseUrl}}/api/repos/:owner/:repo/contents/:path" }},
+      { "name": "Commits", "request": { "method": "GET", "url": "{{baseUrl}}/api/repos/:owner/:repo/commits" }},
+      { "name": "Git Tree", "request": { "method": "GET", "url": "{{baseUrl}}/api/repos/:owner/:repo/git/trees/:sha" }},
+      { "name": "Update file", "request": { "method": "PUT", "url": "{{baseUrl}}/api/repos/:owner/:repo/contents/:path", "body": { "mode": "raw", "raw": "{\"message\":\"update\",\"content\":\"hello\"}" } }},
+      { "name": "Update spec file", "request": { "method": "POST", "url": "{{baseUrl}}/api/repos/:owner/:repo/spec/update", "body": { "mode": "raw", "raw": "{\"content\":\"spec content\"}" } }}
+    ]
+  }

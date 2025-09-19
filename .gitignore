@@ -1,0 +1,14 @@
+node_modules
+.env
+.env.local
+.DS_Store
+npm-debug.log
+/public/*.log
+/public/*.tmp
+/public/*.bak
+/public/*.swp
+/public/*.swo
+/public/.DS_Store
+/public/node_modules
+/public/env.local
+*.backup

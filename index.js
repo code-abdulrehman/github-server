@@ -185,34 +185,6 @@ app.get('/api/repos/:owner/:repo/contents/:path(.*)', ensureAuthenticated, async
   }
 });
 
-// PUT update/create file
-app.put('/api/repos/:owner/:repo/contents/:path(.*)', ensureAuthenticated, async (req, res) => {
-  try {
-    const { owner, repo, path } = req.params;
-    const { message = 'Update via API', content = '', branch, sha, committer } = req.body;
-
-    const payload = {
-      message,
-      content: Buffer.from(content, 'utf8').toString('base64'),
-    };
-    if (branch) payload.branch = branch;
-    if (sha) payload.sha = sha;
-    if (committer) payload.committer = committer;
-
-    const data = await githubRequest(
-      req.user.token,
-      'PUT',
-      `/repos/${owner}/${repo}/contents/${path}`,
-      payload
-    );
-    res.json(data);
-  } catch (err) {
-    res.status(err.response?.status || 500).json({
-      error: err.response?.data || err.message
-    });
-  }
-});
-
 
 
 app.get('/api/repos/:owner/:repo/commits', ensureAuthenticated, async (req, res) => {
@@ -266,3 +238,39 @@ app.get('/admin/allowed-users', (req, res) => {
 });
 
 app.listen(PORT, () => console.log(`${process.env.APP_NAME || 'github-server'} listening on port http://localhost:${PORT}`));
+
+
+// PUT update/create file with optional push
+app.put("/api/repos/:owner/:repo/contents/:path(.*)", ensureAuthenticated, async (req, res) => {
+  try {
+    const { owner, repo, path } = req.params;
+    const { message = "Update via API", content = "", branch, sha, committer, push = false } = req.body;
+
+    const payload = {
+      message,
+      content: content, // Content is already base64 encoded from frontend
+    };
+    if (branch) payload.branch = branch;
+    if (sha) payload.sha = sha;
+    if (committer) payload.committer = committer;
+
+    const data = await githubRequest(
+      req.user.token,
+      "PUT",
+      `/repos/${owner}/${repo}/contents/${path}`,
+      payload
+    );
+    
+    // The GitHub API already creates a commit when updating contents
+    // No additional push operation is needed as the commit is already on the remote
+    if (push) {
+      data.push = { success: true, message: "Commit created and available on remote" };
+    }
+    
+    res.json(data);
+  } catch (err) {
+    res.status(err.response?.status || 500).json({
+      error: err.response?.data || err.message
+    });
+  }
+});

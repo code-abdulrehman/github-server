@@ -47,8 +47,46 @@
       overflow-x: auto;
       font-family: 'Courier New', monospace;
       white-space: pre-wrap;
-      max-height: 70vh;
+      max-height: 69vh;
       overflow-y: auto;
+    }
+    .code-editor {
+      background-color: #1f2937;
+      color: #f9fafb;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      font-family: 'Courier New', monospace;
+      white-space: pre-wrap;
+      max-height: 60vh;
+      overflow-y: auto;
+      width: 100%;
+      height: 30rem;
+      border: 1px solid #374151;
+      resize: vertical;
+    }
+    .media-preview {
+      background-color: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.5rem;
+      padding: 1rem;
+      text-align: center;
+      max-height: 69vh;
+      overflow-y: auto;
+    }
+    .media-preview img {
+      max-width: 100%;
+      max-height: 60vh;
+      scale: 0.8;
+      border-radius: 0.5rem;
+    }
+    .media-preview video {
+      max-width: 100%;
+      max-height: 60vh;
+      border-radius: 0.5rem;
+    }
+    .media-preview audio {
+      width: 100%;
+      margin: 1rem 0;
     }
     .breadcrumb {
       display: flex;
@@ -134,6 +172,20 @@
     .accordion-content.collapsed {
       display: none;
     }
+    .commit-section {
+      background-color: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.5rem;
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+    .file-type-icon {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
   </style>
 </head>
 <body class="bg-gray-100 text-gray-800 h-screen overflow-hidden">
@@ -153,12 +205,14 @@
       <!-- User Profile and Auth Controls -->
       <div class="flex items-center gap-4">
         <div id="user" class="flex items-center gap-2 hidden">
-          <img id="user-avatar" src="" alt="User Avatar" class="w-8 h-8 rounded-full border border-gray-300 shadow-sm" style="display:none;">
+          <img id="user-avatar" src="" alt="User Avatar" class="w-10 h-10 rounded-full border border-gray-300 shadow-sm" style="display:none;">
           <div class="flex flex-col">
             <b id="name" class="text-gray-700"></b>
             <span id="user-name" class="font-medium text-gray-700"></span>
           </div>
-          <button id="logoutBtn" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Logout</button>
+          <button id="logoutBtn" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+            <i class="fas fa-sign-out-alt"></i>
+          </button>
         </div>
         <div id="auth" class="flex items-center gap-2">
           <a href="/auth/github" class="bg-black text-white px-4 py-2 rounded hover:bg-gray-800">
@@ -209,10 +263,13 @@
             <div id="file-content" class="hidden">
               <div class="flex items-center justify-between mb-4">
                 <h4 id="file-name" class="text-lg font-semibold flex items-center gap-2">
-                  <i class="fas fa-file-code text-teal-500"></i>
+                  <i id="file-type-icon" class="fas fa-file-code text-teal-500"></i>
                   <span id="file-name-text"></span>
                 </h4>
                 <div class="flex gap-2">
+                  <button id="edit-btn" class="bg-yellow-500 text-white px-3 py-1 rounded text-sm hover:bg-yellow-600 flex items-center gap-1 hidden">
+                    <i class="fas fa-edit"></i> Edit
+                  </button>
                   <button id="download-btn" class="bg-teal-500 text-white px-3 py-1 rounded text-sm hover:bg-teal-600 flex items-center gap-1">
                     <i class="fas fa-download"></i> Download
                   </button>
@@ -221,7 +278,37 @@
                   </button>
                 </div>
               </div>
-              <div id="file-preview" class="code-content"></div>
+              
+              <!-- View Mode -->
+              <div id="view-mode">
+                <div id="file-preview" class="code-content"></div>
+                <div id="media-preview" class="media-preview hidden"></div>
+              </div>
+              
+              <!-- Edit Mode -->
+              <div id="edit-mode" class="hidden h-auto flex-1">
+                <textarea id="file-editor" class="code-editor " placeholder="File content will appear here..."></textarea>
+                
+                <!-- Commit Section -->
+                <div class="commit-section">
+                  <div class="mb-3">
+                    <label for="commit-message" class="block text-sm font-medium text-gray-700 mb-1">Commit Message</label>
+                    <input type="text" id="commit-message" placeholder="Enter commit message..." 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                  </div>
+                  <div class="flex gap-2">
+                    <button id="save-btn" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 flex items-center gap-2">
+                      <i class="fas fa-save"></i> Save & Commit
+                    </button>
+                    <button id="save-push-btn" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 flex items-center gap-2">
+                      <i class="fas fa-upload"></i> Save, Commit & Push
+                    </button>
+                    <button id="cancel-edit-btn" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 flex items-center gap-2">
+                      <i class="fas fa-times"></i> Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
             <div id="welcome-message" class="text-center text-gray-500 mt-20">
               <i class="fas fa-folder-open text-6xl mb-4"></i>
@@ -239,9 +326,77 @@
     let currentFile = null;
     let fileTreeData = {};
     let expandedFolders = new Set();
+    let isEditMode = false;
+    let originalContent = '';
 
-    async function api(path) {
-      const res = await fetch(path);
+    // File type detection and icons
+    function getFileTypeIcon(fileName) {
+      const ext = fileName.split('.').pop().toLowerCase();
+      const iconMap = {
+        // Images
+        'png': 'fa-image', 'jpg': 'fa-image', 'jpeg': 'fa-image', 'gif': 'fa-image', 
+        'svg': 'fa-image', 'webp': 'fa-image', 'bmp': 'fa-image', 'ico': 'fa-image',
+        // Videos
+        'mp4': 'fa-video', 'avi': 'fa-video', 'mov': 'fa-video', 'wmv': 'fa-video',
+        'flv': 'fa-video', 'webm': 'fa-video', 'mkv': 'fa-video',
+        // Audio
+        'mp3': 'fa-music', 'wav': 'fa-music', 'flac': 'fa-music', 'aac': 'fa-music',
+        'ogg': 'fa-music', 'm4a': 'fa-music',
+        // Documents
+        'pdf': 'fa-file-pdf', 'doc': 'fa-file-word', 'docx': 'fa-file-word',
+        'xls': 'fa-file-excel', 'xlsx': 'fa-file-excel', 'ppt': 'fa-file-powerpoint',
+        'pptx': 'fa-file-powerpoint',
+        // Archives
+        'zip': 'fa-file-archive', 'rar': 'fa-file-archive', '7z': 'fa-file-archive',
+        'tar': 'fa-file-archive', 'gz': 'fa-file-archive',
+        // Code
+        'js': 'fa-file-code', 'ts': 'fa-file-code', 'html': 'fa-file-code',
+        'css': 'fa-file-code', 'json': 'fa-file-code', 'xml': 'fa-file-code',
+        'py': 'fa-file-code', 'java': 'fa-file-code', 'cpp': 'fa-file-code',
+        'c': 'fa-file-code', 'php': 'fa-file-code', 'rb': 'fa-file-code',
+        'go': 'fa-file-code', 'rs': 'fa-file-code', 'swift': 'fa-file-code',
+        'kt': 'fa-file-code', 'scala': 'fa-file-code', 'sh': 'fa-file-code',
+        'bash': 'fa-file-code', 'zsh': 'fa-file-code', 'fish': 'fa-file-code',
+        'sql': 'fa-file-code', 'yaml': 'fa-file-code', 'yml': 'fa-file-code',
+        'toml': 'fa-file-code', 'ini': 'fa-file-code', 'cfg': 'fa-file-code',
+        'conf': 'fa-file-code', 'log': 'fa-file-alt', 'txt': 'fa-file-alt',
+        'md': 'fa-file-alt', 'rst': 'fa-file-alt', 'rtf': 'fa-file-alt'
+      };
+      return iconMap[ext] || 'fa-file';
+    }
+
+    function getFileType(fileName) {
+      const ext = fileName.split('.').pop().toLowerCase();
+      const typeMap = {
+        // Images
+        'png': 'image', 'jpg': 'image', 'jpeg': 'image', 'gif': 'image', 
+        'svg': 'image', 'webp': 'image', 'bmp': 'image', 'ico': 'image',
+        // Videos
+        'mp4': 'video', 'avi': 'video', 'mov': 'video', 'wmv': 'video',
+        'flv': 'video', 'webm': 'video', 'mkv': 'video',
+        // Audio
+        'mp3': 'audio', 'wav': 'audio', 'flac': 'audio', 'aac': 'audio',
+        'ogg': 'audio', 'm4a': 'audio',
+        // Text/Code files that can be edited
+        'txt': 'text', 'md': 'text', 'js': 'text', 'ts': 'text', 'html': 'text',
+        'css': 'text', 'json': 'text', 'xml': 'text', 'py': 'text', 'java': 'text',
+        'cpp': 'text', 'c': 'text', 'php': 'text', 'rb': 'text', 'go': 'text',
+        'rs': 'text', 'swift': 'text', 'kt': 'text', 'scala': 'text', 'sh': 'text',
+        'bash': 'text', 'zsh': 'text', 'fish': 'text', 'sql': 'text', 'yaml': 'text',
+        'yml': 'text', 'toml': 'text', 'ini': 'text', 'cfg': 'text', 'conf': 'text',
+        'log': 'text', 'rst': 'text', 'rtf': 'text'
+      };
+      return typeMap[ext] || 'binary';
+    }
+
+    async function api(path, options = {}) {
+      const res = await fetch(path, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...options.headers
+        },
+        ...options
+      });
       if (!res.ok) throw new Error(await res.text());
       return res.json();
     }
@@ -306,6 +461,7 @@
       currentFile = null;
       expandedFolders.clear();
       fileTreeData = {};
+      exitEditMode();
       
       // Update UI
       document.getElementById('repo-header').classList.remove('hidden');
@@ -350,6 +506,7 @@
         if (path !== currentPath) {
           currentFile = null;
           document.getElementById('file-content').classList.add('hidden');
+          exitEditMode();
         }
       } catch(e) {
         console.error('Error loading directory:', e);
@@ -390,10 +547,11 @@
             </div>
           `;
         } else {
+          const fileIcon = getFileTypeIcon(item.name);
           return `
             <div class="tree-item" data-path="${item.path}" data-type="${item.type}" data-sha="${item.sha}">
               <span class="accordion-toggle" style="opacity: 0;"></span>
-              <i class="fas fa-file file-icon"></i>
+              <i class="fas ${fileIcon} file-icon"></i>
               <span class="text-sm text-ellipsis overflow-hidden whitespace-nowrap">${item.name}</span>
               <span class="text-xs text-gray-500 ml-auto">${formatFileSize(item.size)}</span>
             </div>
@@ -474,10 +632,11 @@
             </div>
           `;
         } else {
+          const fileIcon = getFileTypeIcon(item.name);
           return `
             <div class="tree-item" data-path="${item.path}" data-type="${item.type}" data-sha="${item.sha}">
               <span class="accordion-toggle" style="opacity: 0;"></span>
-              <i class="fas fa-file file-icon"></i>
+              <i class="fas ${fileIcon} file-icon"></i>
               <span class="text-sm text-ellipsis overflow-hidden whitespace-nowrap">${item.name}</span>
               <span class="text-xs text-gray-500 ml-auto">${formatFileSize(item.size)}</span>
             </div>
@@ -534,23 +693,41 @@
         const file = await api(`/api/repos/${currentRepo.owner}/${currentRepo.repo}/contents/${path}`);
         currentFile = file;
         
-        // Decode base64 content
-        const content = atob(file.content);
+        // Update file type icon
+        const fileTypeIcon = getFileTypeIcon(file.name);
+        document.getElementById('file-type-icon').className = `fas ${fileTypeIcon} text-teal-500`;
         
         // Show file content
         document.getElementById('file-content').classList.remove('hidden');
         document.getElementById('file-name-text').textContent = file.name;
-        document.getElementById('file-preview').textContent = content;
         
         // Update breadcrumb to show current file
         updateBreadcrumb();
+        
+        // Exit edit mode when loading new file
+        exitEditMode();
+        
+        // Determine file type and show appropriate preview
+        const fileType = getFileType(file.name);
+        
+        if (fileType === 'image') {
+          showImagePreview(file);
+        } else if (fileType === 'video') {
+          showVideoPreview(file);
+        } else if (fileType === 'audio') {
+          showAudioPreview(file);
+        } else if (fileType === 'text') {
+          showTextPreview(file);
+        } else {
+          showBinaryPreview(file);
+        }
         
         // Update download and raw buttons
         const downloadBtn = document.getElementById('download-btn');
         const rawBtn = document.getElementById('raw-btn');
         
         downloadBtn.onclick = () => {
-          const blob = new Blob([content], { type: 'text/plain' });
+          const blob = new Blob([atob(file.content)], { type: 'application/octet-stream' });
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
@@ -566,6 +743,170 @@
       } catch(e) {
         console.error('Error loading file:', e);
         document.getElementById('file-preview').textContent = 'Error loading file content';
+      }
+    }
+
+    function showImagePreview(file) {
+      document.getElementById('file-preview').classList.add('hidden');
+      document.getElementById('media-preview').classList.remove('hidden');
+      
+      const mediaPreview = document.getElementById('media-preview');
+      mediaPreview.innerHTML = `
+        <div class="mb-4">
+          <h5 class="text-lg font-semibold text-gray-700 mb-2">Image Preview</h5>
+          <p class="text-sm text-gray-600">${file.name} (${formatFileSize(file.size)})</p>
+        </div>
+        <img src="data:image/${file.name.split('.').pop()};base64,${file.content}" alt="${file.name}" />
+      `;
+      
+      // Show edit button for SVG files
+      if (file.name.toLowerCase().endsWith('.svg')) {
+        document.getElementById('edit-btn').classList.remove('hidden');
+      } else {
+        document.getElementById('edit-btn').classList.add('hidden');
+      }
+    }
+
+    function showVideoPreview(file) {
+      document.getElementById('file-preview').classList.add('hidden');
+      document.getElementById('media-preview').classList.remove('hidden');
+      
+      const mediaPreview = document.getElementById('media-preview');
+      const videoType = `video/${file.name.split('.').pop()}`;
+      mediaPreview.innerHTML = `
+        <div class="mb-4">
+          <h5 class="text-lg font-semibold text-gray-700 mb-2">Video Preview</h5>
+          <p class="text-sm text-gray-600">${file.name} (${formatFileSize(file.size)})</p>
+        </div>
+        <video controls>
+          <source src="data:${videoType};base64,${file.content}" type="${videoType}">
+          Your browser does not support the video tag.
+        </video>
+      `;
+      
+      document.getElementById('edit-btn').classList.add('hidden');
+    }
+
+    function showAudioPreview(file) {
+      document.getElementById('file-preview').classList.add('hidden');
+      document.getElementById('media-preview').classList.remove('hidden');
+      
+      const mediaPreview = document.getElementById('media-preview');
+      const audioType = `audio/${file.name.split('.').pop()}`;
+      mediaPreview.innerHTML = `
+        <div class="mb-4">
+          <h5 class="text-lg font-semibold text-gray-700 mb-2">Audio Preview</h5>
+          <p class="text-sm text-gray-600">${file.name} (${formatFileSize(file.size)})</p>
+        </div>
+        <audio controls>
+          <source src="data:${audioType};base64,${file.content}" type="${audioType}">
+          Your browser does not support the audio element.
+        </audio>
+      `;
+      
+      document.getElementById('edit-btn').classList.add('hidden');
+    }
+
+    function showTextPreview(file) {
+      document.getElementById('media-preview').classList.add('hidden');
+      document.getElementById('file-preview').classList.remove('hidden');
+      
+      // Decode base64 content
+      const content = atob(file.content);
+      originalContent = content;
+      
+      document.getElementById('file-preview').textContent = content;
+      document.getElementById('edit-btn').classList.remove('hidden');
+    }
+
+    function showBinaryPreview(file) {
+      document.getElementById('media-preview').classList.add('hidden');
+      document.getElementById('file-preview').classList.remove('hidden');
+      
+      document.getElementById('file-preview').innerHTML = `
+        <div class="text-center py-8">
+          <i class="fas fa-file text-6xl text-gray-400 mb-4"></i>
+          <h3 class="text-lg font-semibold text-gray-700 mb-2">Binary File</h3>
+          <p class="text-sm text-gray-600 mb-4">${file.name} (${formatFileSize(file.size)})</p>
+          <p class="text-sm text-gray-500">This file cannot be previewed in the browser.</p>
+          <p class="text-sm text-gray-500">Use the Download button to save it to your computer.</p>
+        </div>
+      `;
+      
+      document.getElementById('edit-btn').classList.add('hidden');
+    }
+
+    function enterEditMode() {
+      if (!currentFile) return;
+      
+      isEditMode = true;
+      document.getElementById('view-mode').classList.add('hidden');
+      document.getElementById('edit-mode').classList.remove('hidden');
+      document.getElementById('file-editor').value = originalContent;
+      document.getElementById('commit-message').value = `Update ${currentFile.name}`;
+    }
+
+    function exitEditMode() {
+      isEditMode = false;
+      document.getElementById('view-mode').classList.remove('hidden');
+      document.getElementById('edit-mode').classList.add('hidden');
+      document.getElementById('file-editor').value = '';
+      document.getElementById('commit-message').value = '';
+    }
+
+    async function saveFile(shouldPush = false) {
+      if (!currentFile) return;
+      
+      const newContent = document.getElementById('file-editor').value;
+      const commitMessage = document.getElementById('commit-message').value;
+      
+      if (!commitMessage.trim()) {
+        alert('Please enter a commit message');
+        return;
+      }
+      
+      try {
+        // Encode content to base64
+        const encodedContent = btoa(newContent);
+        
+        const payload = {
+          message: commitMessage,
+          content: encodedContent,
+          sha: currentFile.sha,
+          path: currentFile.path
+        };
+        
+        if (shouldPush) {
+          payload.push = true;
+        }
+        
+        await api(`/api/repos/${currentRepo.owner}/${currentRepo.repo}/contents/${currentFile.path}`, {
+          method: 'PUT',
+          body: JSON.stringify(payload)
+        });
+        
+        // Update the original content
+        originalContent = newContent;
+        
+        // Exit edit mode and refresh file content
+        exitEditMode();
+        
+        // Refresh the file display
+        const fileType = getFileType(currentFile.name);
+        if (fileType === 'text') {
+          document.getElementById('file-preview').textContent = newContent;
+        }
+        
+        // Show success message
+        const action = shouldPush ? 'saved, committed and pushed' : 'saved and committed';
+        alert(`File ${action} successfully!`);
+        
+        // Refresh the file tree to show updated content
+        await loadDirectory(currentPath);
+        
+      } catch(e) {
+        console.error('Error saving file:', e);
+        alert('Error saving file: ' + e.message);
       }
     }
 
@@ -609,6 +950,7 @@
             currentFile = null;
             updateBreadcrumb();
             loadDirectory(path);
+            exitEditMode();
           });
         }
       });
@@ -621,6 +963,12 @@
       const i = Math.floor(Math.log(bytes) / Math.log(k));
       return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
     }
+
+    // Event listeners
+    document.getElementById('edit-btn').onclick = enterEditMode;
+    document.getElementById('cancel-edit-btn').onclick = exitEditMode;
+    document.getElementById('save-btn').onclick = () => saveFile(false);
+    document.getElementById('save-push-btn').onclick = () => saveFile(true);
 
     // Logout functionality
     document.getElementById('logoutBtn').onclick = async () => {

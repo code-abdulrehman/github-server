@@ -20,28 +20,29 @@
       margin: 1px 0;
     }
     .tree-item:hover {
-      background-color: #f3f4f6;
+      background-color: rgba(1, 95, 95, 0.22);
     }
     .tree-item.selected {
-      background-color: #dbeafe;
-      color: #1d4ed8;
+      background-color: rgba(1, 95, 95, 0.22);
+      color: rgb(1, 95, 95);
     }
     .tree-item.folder {
       font-weight: 500;
     }
     .tree-item.folder.expanded {
-      background-color: #f0f9ff;
+      background-color: rgba(1, 95, 95, 0.22);
     }
     .folder-icon {
-      color: #f59e0b;
+      color: rgb(1, 95, 95);
     }
     .file-icon {
-      color: #6b7280;
+      color: rgb(1, 95, 95);
     }
     .code-content {
       background-color: #1f2937;
       color: #f9fafb;
       padding: 1rem;
+      padding-bottom: 2rem;
       border-radius: 0.5rem;
       overflow-x: auto;
       font-family: 'Courier New', monospace;
@@ -55,15 +56,15 @@
       gap: 0.5rem;
       margin-bottom: 1rem;
       padding: 0.75rem;
-      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      background: linear-gradient(135deg, rgba(1, 95, 95, 0.22) 0%, rgba(1, 95, 95, 0.22) 100%);
       border-radius: 0.75rem;
-      border: 1px solid #e2e8f0;
+      border: 1px solid rgba(1, 95, 95, 0.22);
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
       flex-wrap: wrap;
     }
     .breadcrumb-item {
       cursor: pointer;
-      color: #3b82f6;
+      color: rgb(1, 95, 95);
       padding: 0.25rem 0.5rem;
       border-radius: 0.375rem;
       transition: all 0.2s ease;
@@ -74,39 +75,39 @@
       white-space: nowrap;
     }
     .breadcrumb-item:hover {
-      background-color: #dbeafe;
-      color: #1d4ed8;
+      background-color: rgba(1, 95, 95, 0.22);
+      color: rgb(1, 95, 95);
       transform: translateY(-1px);
     }
     .breadcrumb-item.root {
-      background-color: #3b82f6;
+      background-color: rgb(1, 95, 95);
       color: white;
       font-weight: 600;
     }
     .breadcrumb-item.root:hover {
-      background-color: #2563eb;
+      background-color: rgba(1, 95, 95, 0.258);
     }
     .breadcrumb-item.folder {
       background-color: #f3f4f6;
-      color: #374151;
+      color: rgb(1, 95, 95);
       border: 1px solid #d1d5db;
     }
     .breadcrumb-item.folder:hover {
-      background-color: #e5e7eb;
-      color: #1f2937;
+      background-color: rgba(1, 95, 95, 0.22);
+      color: rgb(1, 95, 95);
     }
     .breadcrumb-item.file {
       background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-      border: 1px solid #f59e0b;
-      color: #92400e;
+      border: 1px solid rgb(1, 95, 95);
+      color: rgb(1, 95, 95);
       font-weight: 600;
     }
     .breadcrumb-item.file:hover {
-      background: linear-gradient(135deg, #fde68a 0%, #fcd34d 100%);
-      color: #78350f;
+      background: linear-gradient(135deg, rgba(1, 95, 95, 0.33) 0%, rgba(1, 95, 95, 0.33) 100%);
+      color: rgb(1, 95, 95);
     }
     .breadcrumb-separator {
-      color: #6b7280;
+      color: rgb(1, 95, 95);
       font-weight: bold;
       margin: 0 0.25rem;
       display: flex;
@@ -119,7 +120,7 @@
       align-items: center;
       justify-content: center;
       font-size: 12px;
-      color: #6b7280;
+      color: rgb(1, 95, 95);
       transition: transform 0.2s ease;
     }
     .accordion-toggle.expanded {
@@ -127,7 +128,7 @@
     }
     .accordion-content {
       margin-left: 20px;
-      border-left: 2px solid #e5e7eb;
+      border-left: 2px solid rgb(1, 95, 95);
       padding-left: 10px;
     }
     .accordion-content.collapsed {
@@ -152,13 +153,13 @@
       <!-- User Profile and Auth Controls -->
       <div class="flex items-center gap-4">
         <div id="user" class="flex items-center gap-2 hidden">
-          <div class="flex items-center gap-2">
-            <img id="user-avatar" src="" alt="User Avatar" class="w-8 h-8 rounded-full border border-gray-300 shadow-sm" style="display:none;">
+          <img id="user-avatar" src="" alt="User Avatar" class="w-8 h-8 rounded-full border border-gray-300 shadow-sm" style="display:none;">
+          <div class="flex flex-col">
+            <b id="name" class="text-gray-700"></b>
             <span id="user-name" class="font-medium text-gray-700"></span>
           </div>
           <button id="logoutBtn" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Logout</button>
         </div>
-          
         <div id="auth" class="flex items-center gap-2">
           <a href="/auth/github" class="bg-black text-white px-4 py-2 rounded hover:bg-gray-800">
             <i class="fab fa-github"></i> Login with GitHub
@@ -171,8 +172,8 @@
   <!-- Main Layout -->
   <div class="flex h-full">
     <!-- Left Sidebar - Repositories -->
-    <div class="w-1/3 bg-white border-r shadow-sm overflow-y-auto">
-      <div class="p-4">
+    <div class="w-1/4 bg-white border-r shadow-sm overflow-y-auto pb-16">
+      <div class="py-4 pl-4 px-2 pb-16">
         <h2 class="text-lg font-semibold mb-3 flex items-center gap-2">
           <i class="fas fa-folder"></i> Repositories
         </h2>
@@ -181,9 +182,9 @@
     </div>
 
     <!-- Main Content Area -->
-    <div class="flex-1 flex flex-col">
+    <div class="flex-1 flex flex-col w-full overflow-auto pb-16">
       <!-- File Tree Header -->
-      <div class="bg-white border-b p-4">
+      <div class="bg-white border-b p-4 ">
         <div id="repo-header" class="hidden">
           <h3 id="current-repo" class="text-lg font-semibold mb-3 flex items-center gap-2">
             <i class="fas fa-code-branch"></i>
@@ -194,25 +195,25 @@
       </div>
 
       <!-- File Tree and Content -->
-      <div class="flex-1 flex overflow-hidden">
+      <div class="flex-1 flex overflow-hidden h-[98%]">
         <!-- File Tree -->
-        <div class="w-1/2 bg-white border-r overflow-y-auto">
-          <div class="p-4">
+        <div class="w-1/4 bg-white border-r overflow-y-auto">
+          <div class="p-4 pb-16">
             <div id="file-tree" class="file-tree"></div>
           </div>
         </div>
 
         <!-- File Content -->
-        <div class="w-1/2 bg-white overflow-y-auto">
-          <div class="p-4">
+        <div class="w-3/4 bg-white pb-16">
+          <div class="p-4 pb-16 ">
             <div id="file-content" class="hidden">
               <div class="flex items-center justify-between mb-4">
                 <h4 id="file-name" class="text-lg font-semibold flex items-center gap-2">
-                  <i class="fas fa-file-code text-blue-500"></i>
+                  <i class="fas fa-file-code text-teal-500"></i>
                   <span id="file-name-text"></span>
                 </h4>
                 <div class="flex gap-2">
-                  <button id="download-btn" class="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 flex items-center gap-1">
+                  <button id="download-btn" class="bg-teal-500 text-white px-3 py-1 rounded text-sm hover:bg-teal-600 flex items-center gap-1">
                     <i class="fas fa-download"></i> Download
                   </button>
                   <button id="raw-btn" class="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600 flex items-center gap-1">
@@ -249,13 +250,22 @@
       try {
         const me = await api('/api/me');
         document.getElementById('auth').classList.add('hidden');
-        document.getElementById('logoutBtn').classList.remove('hidden');
         const userDiv = document.getElementById('user');
         userDiv.classList.remove('hidden');
-        userDiv.innerHTML = `<div class="flex items-center gap-3">
-          <img src="${me.photos?.[0]?.value || ''}" class="w-8 h-8 rounded-full"/>
-          <div><div class="font-bold">${me.username}</div><div class="text-sm text-gray-600">${me.displayName || ''}</div></div>
-        </div>`;
+        
+        // Update user info
+        const userAvatar = document.getElementById('user-avatar');
+        const name = document.getElementById('name');
+        const userName = document.getElementById('user-name');
+        
+        if (me.photos && me.photos[0] && me.photos[0].value) {
+          userAvatar.src = me.photos[0].value;
+          userAvatar.style.display = 'block';
+        }
+        
+        userName.textContent = me.username || me.displayName || 'User';
+        name.textContent = me.displayName || 'User';
+        
         loadRepos();
       } catch(e) {
         console.log('Not logged in');
@@ -268,7 +278,7 @@
         const reposDiv = document.getElementById('repos');
         reposDiv.innerHTML = repos.map(r => `
           <div class="p-3 border rounded cursor-pointer hover:bg-gray-50 repo-item" data-owner="${r.owner.login}" data-repo="${r.name}">
-            <div class="font-semibold text-blue-600">${r.name}</div>
+            <div class="font-semibold text-teal-600">${r.name}</div>
             <div class="text-sm text-gray-600">${r.description || 'No description'}</div>
             <div class="text-xs text-gray-500 mt-1">
               <i class="fas fa-star"></i> ${r.stargazers_count} 
@@ -311,9 +321,9 @@
       
       // Update selected repo in sidebar
       document.querySelectorAll('.repo-item').forEach(item => {
-        item.classList.remove('bg-blue-50', 'border-blue-300');
+        item.classList.remove('bg-teal-50', 'border-teal-300');
       });
-      document.querySelector(`[data-owner="${owner}"][data-repo="${repo}"]`).classList.add('bg-blue-50', 'border-blue-300');
+      document.querySelector(`[data-owner="${owner}"][data-repo="${repo}"]`).classList.add('bg-teal-50', 'border-teal-300');
     }
 
     async function loadDirectory(path) {
@@ -373,7 +383,7 @@
                 <i class="fas fa-chevron-right"></i>
               </span>
               <i class="fas fa-folder folder-icon"></i>
-              <span>${item.name}</span>
+              <span class="text-sm text-ellipsis overflow-hidden whitespace-nowrap">${item.name}</span>
             </div>
             <div class="accordion-content ${isExpanded ? '' : 'collapsed'}" id="content-${item.path.replace(/[^a-zA-Z0-9]/g, '_')}">
               ${isExpanded ? '<div class="text-gray-400 text-sm">Loading...</div>' : ''}
@@ -384,7 +394,7 @@
             <div class="tree-item" data-path="${item.path}" data-type="${item.type}" data-sha="${item.sha}">
               <span class="accordion-toggle" style="opacity: 0;"></span>
               <i class="fas fa-file file-icon"></i>
-              <span>${item.name}</span>
+              <span class="text-sm text-ellipsis overflow-hidden whitespace-nowrap">${item.name}</span>
               <span class="text-xs text-gray-500 ml-auto">${formatFileSize(item.size)}</span>
             </div>
           `;
@@ -457,7 +467,7 @@
                 <i class="fas fa-chevron-right"></i>
               </span>
               <i class="fas fa-folder folder-icon"></i>
-              <span>${item.name}</span>
+              <span class="text-sm text-ellipsis overflow-hidden whitespace-nowrap">${item.name}</span>
             </div>
             <div class="accordion-content ${isExpanded ? '' : 'collapsed'}" id="content-${item.path.replace(/[^a-zA-Z0-9]/g, '_')}">
               ${isExpanded ? '<div class="text-gray-400 text-sm">Loading...</div>' : ''}
@@ -468,7 +478,7 @@
             <div class="tree-item" data-path="${item.path}" data-type="${item.type}" data-sha="${item.sha}">
               <span class="accordion-toggle" style="opacity: 0;"></span>
               <i class="fas fa-file file-icon"></i>
-              <span>${item.name}</span>
+              <span class="text-sm text-ellipsis overflow-hidden whitespace-nowrap">${item.name}</span>
               <span class="text-xs text-gray-500 ml-auto">${formatFileSize(item.size)}</span>
             </div>
           `;

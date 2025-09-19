@@ -1,26 +1,25 @@
 {
-    "version": 3,
-    "builds": [
-      { "src": "api/index.js", "use": "@vercel/node" }
-    ],
-    "routes": [
-      {
-        "src": "/api/(.*)",
-        "dest": "/api/index.js"
-      },
-      {
-        "src": "/(.*)",
-        "dest": "/api/index.js"
-      }
-    ],
-    "env": {
-      "NODE_ENV": "production"
+  "version": 3,
+  "builds": [
+    { "src": "index.js", "use": "@vercel/node" }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "index.js"
     },
-    "functions": {
-      "api/index.js": {
-        "memory": 512,
-        "maxDuration": 10
-      }
+    {
+      "src": "/(.*)",
+      "dest": "public/index.html"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "functions": {
+    "index.js": {
+      "memory": 512,
+      "maxDuration": 10
     }
   }
-  
+}
